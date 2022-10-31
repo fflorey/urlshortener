@@ -11,7 +11,7 @@ client = null
 function initRedis() {
   client = redis.createClient();
   client.connect();
-  client.on('error', (err) => console.log('Redis Client Error', err));
+  client.on('error', (err) => { console.log('Redis Client Error', err); } );
 }
 
 async function getShortForm ( url ) {
@@ -30,7 +30,7 @@ async function getShortForm ( url ) {
   return simpleID-1;
 }
 
-async function getUrlFromShort ( short ) {
+async function getUrlFromShortForm ( short ) {
   if ( client == null ) {
     initRedis()
   }
@@ -45,20 +45,20 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get('/geturl', (req, res) => {
 
+/* geturl */
+router.get('/geturl', (req, res) => {
+  
   console.log('request: ' + req.query.id )  
   if ( req.query.id != null ) {
-    getUrlFromShort(req.query.id).then( (result) => {
+    getUrlFromShortForm(req.query.id).then( (result) => {
       console.log("result!" + result);
-      // res.render('showshort', { url: `${result}` })
-      // res.render('redirect', { title: 'Copy shorturl', url: `${result}` });
       res.render('redirect', { title: 'Copy shorturl', url: `${result}` });
     })
   }  
 })
 
-
+/* getshort */
 router.get('/getshort', (req, res) => {
 
   console.log('request: ' + req.query.url )  
