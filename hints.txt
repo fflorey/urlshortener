@@ -1,0 +1,48 @@
+connecting to db:
+
+attach to the running container with
+
+docker exec -it 7f9b5a44f1e8 /bin/bash
+
+719... is  the container ID
+
+
+then use psql
+
+to find the value of the autoincrementer:
+
+SELECT currval(pg_get_serial_sequence('fruits', 'id'));
+
+
+ok, instead of 'fruits' and 'id' you have to use the correct column names
+
+what i set up for the urlshortener
+
+
+\psql
+
+create table shorties ( id SERIAL PRIMARY KEY, uri VARCHAR(255) NOT NULL );
+
+you can insert values by ommiting the id itself by using
+
+insert into shorties(uri) values ( 'www.heise.de' );
+
+\q
+
+
+(ok, i have to verify the last statements, i just typed them down from memory)
+
+
+
+
+
+voila
+
+
+
+
+
+
+
+
+
