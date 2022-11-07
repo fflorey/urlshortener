@@ -24,13 +24,6 @@ To use the postgres solution, copy routes/index postgeres.js to routes/index.js
 *************************
 
 
-!!!!!!WICHTIG:
-Beim ersten mal Starten des Containers muss die korrekte Tabelle einmalig angelegt werden:
-siehe dazu hints.txt 
-
-redis docker wird nicht benötigt
-
-*********************
 
 
 
