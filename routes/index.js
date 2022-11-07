@@ -1,56 +1,46 @@
-
+const { RedisFunctionFlags } = require('@redis/client/dist/lib/commands/generic-transformers');
 var express = require('express');
 var router = express.Router();
-const { Client } = require('pg')
+var redis = require('redis');
+
+var simpleID = 1
+
+client = null
 
 
-const client = new Client( {
-user: 'postgres',
-  host: 'localhost',
-  password: 'geheim',
-  port: 5432} )
+function initRedis() {
+  client = redis.createClient({
+    url: 'redis://redis:6379'
+});
   client.connect();
-
-var simpleID = -1
-
-function getCurrentID (res) {
-  client.query( {text: "SELECT last_value from shorties_id_seq", rowMode: 'array' }, (err, r) => {
-    console.log('res: ' + r.rows[0]);
-    if  ( err == null ) {
-      res.render('showshort', { title: 'Copy shorturl', url: `http://localhost:3000/geturl?id=${r.rows[0]}` });
-    } else {
-      // something went wrong, aber so richtig
-      console.log(err.stack);
-    }
-  });
+  client.on('error', (err) => { console.log('Redis Client Error', err); } );
 }
 
-function addURI ( uri, res ) {
-  console.log('ok, uri: ' + uri);
-  client.query( {text: `INSERT INTO shorties(uri) VALUES ('${uri}')` }, (err, r) => {
-    console.log('res: ' + r);
-    if  ( err == null ) {
-      // go on and never return - function name is bullshit, should be something
-      // like display current id to user
-      getCurrentID(res);
-    } else {
-      console.log(err.stack);
-    }
-  });
+async function getShortForm ( url ) {
+  if ( client == null ) {
+    initRedis()
+    simpleID = await client.get('ID'); 
+    console.log("simpoleID: " + simpleID)
+    if ( simpleID == null )  {
+      console.log("simpleID not known");
+      simpleID = 1;      
+      await client.set('ID', simpleID);
+    } 
+  }
+  await client.set((simpleID++).toString(), encodeURIComponent(url));
+  await client.set('ID', simpleID);
+  return simpleID-1;
 }
 
-function getURI ( id, res ) {
-  client.query( {text: `SELECT uri FROM shorties WHERE id=${id}`, rowMode: 'array' }, (err, r) => {
-    console.log('res: ' + r.rows[0]);
-    if  ( err == null ) {
-      var uri = decodeURIComponent(r.rows[0]);
-      res.render('redirect', { title: 'Copy shorturl', url: `${uri}` });
-    } else {
-      console.log(err.stack);
-      return 0;
-    }
-  });
+async function getUrlFromShortForm ( short ) {
+  if ( client == null ) {
+    initRedis()
+  }
+  const value = await client.get(short);
+  console.log("value:"+value)
+  return decodeURIComponent(value);
 }
+
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -62,17 +52,23 @@ router.get('/', function(req, res, next) {
 router.get('/geturl', (req, res) => {  
   console.log('request: ' + req.query.id )  
   if ( req.query.id != null ) {
-    getURI(req.query.id, res);
+    getUrlFromShortForm(req.query.id).then( (result) => {
+      console.log("result!" + result);
+      res.render('redirect', { title: 'Copy shorturl', url: `${result}` });
+    })
   }  
 })
 
 /* getshort */
 router.get('/getshort', (req, res) => {
-    console.log('request: ' + req.query.url )  
-    if ( req.query.url != null ) {
-      addURI( encodeURIComponent(req.query.url), res);
-    }
+  console.log('request: ' + req.query.url )  
+  if ( req.query.url != null ) {
+    getShortForm(req.query.url).then( (result) => {
+      console.log("result!" + result);
+      var url = 
+      res.render('showshort', { title: 'Copy shorturl', url: `http://localhost:3000/geturl?id=${result}` });
+    })
   }  
-)
+})
 
 module.exports = router;

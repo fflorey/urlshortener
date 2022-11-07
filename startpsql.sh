@@ -1,3 +1,17 @@
-#!/bin/bash
+#!/bin/bash 
 
-docker run --name shorturl -e POSTGRES_PASSWORD=geheim -p:5432:5432 -d postgres
+echo "start container"
+
+docker-compose up &
+
+echo "wait 12 sec."
+sleep 12
+
+echo "started"
+set $(docker ps -a | grep postgres )
+container=$1
+echo "container is: $container"
+
+docker exec -i $container psql -d postgres <<-EOF
+create table shorties ( id SERIAL PRIMARY KEY, uri VARCHAR(255) NOT NULL );
+EOF
